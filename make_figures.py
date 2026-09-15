@@ -108,10 +108,77 @@ GW, GH = 3 * CW + 2 * GAP, 2 * CH + GAP            # grid size
 POS = {"obs": (0.55, 2.75), "doA": (3.30, 4.65), "doB": (3.30, 0.85),
        "union": (6.20, 2.75), "full": (8.85, 2.75)}
 
-fig, ax = plt.subplots(figsize=(7.2, 3.85))
+fig, ax = plt.subplots(figsize=(7.2, 5.55))
 ax.set_xlim(0, 11.15)
-ax.set_ylim(-1.20, 7.05)
+ax.set_ylim(-1.20, 10.70)
 ax.axis("off")
+
+# ---------- top band: the causal graph and the probability density ----------
+from matplotlib.patches import Ellipse
+
+ROSE = "#A8434A"
+SY = (11.90 / 5.55) / (11.15 / 7.2)          # y-units per x-unit on screen
+NR = 0.30                                     # node radius (x-units)
+
+def node(x, y, label, color=INK, dashed=False):
+    ax.add_patch(Ellipse((x, y), 2 * NR, 2 * NR * SY, facecolor="white",
+                         edgecolor=color, linewidth=0.8,
+                         linestyle=(0, (2.5, 2)) if dashed else "solid"))
+    ax.text(x, y, label, ha="center", va="center", fontsize=7.5, color=color)
+
+def edge(p1, p2, color, rad=0.0, dashed=False):
+    ax.add_patch(FancyArrowPatch(p1, p2, arrowstyle="-|>", mutation_scale=7,
+                                 lw=0.8, color=color, shrinkA=13, shrinkB=13,
+                                 connectionstyle=f"arc3,rad={rad}",
+                                 linestyle=(0, (2.5, 2)) if dashed else "solid"))
+
+U_, XA_, XB_, Y_ = (1.35, 10.00), (0.60, 8.55), (1.85, 8.55), (3.05, 8.55)
+node(*U_, "$U$", color=ROSE, dashed=True)
+node(*XA_, "$X^{A}$")
+node(*XB_, "$X^{B}$")
+node(*Y_, "$Y$")
+edge(U_, XA_, ROSE)
+edge(U_, XB_, ROSE)
+edge(U_, Y_, ROSE, rad=-0.35, dashed=True)
+edge(XA_, XB_, GREY)
+edge(XB_, Y_, GREY)
+edge(XA_, Y_, GREY, rad=0.30)
+ax.text(1.75, 7.28, r"graph (a):  $U\!\to\!X^A$, $U\!\to\!X^B$, $X^A\!\to\!X^B$",
+        ha="center", fontsize=6.2, color=INK)
+ax.text(1.75, 6.90, r"$f(u{=}0) = f(u{=}1) = 1/2$", ha="center", fontsize=6.4,
+        color=INK)
+
+def table(x0, ytop, title, corner, colhdr, rows, cw, lw_):
+    RH = 0.36
+    ax.text(x0, ytop, title, fontsize=6.4, color=INK, va="center")
+    y = ytop - RH
+    ax.text(x0 + lw_ / 2, y, corner, fontsize=5.4, color=GREY, ha="center",
+            va="center", family="DejaVu Sans Mono")
+    for j, cl in enumerate(colhdr):
+        ax.text(x0 + lw_ + (j + 0.5) * cw, y, cl, fontsize=5.4, color=GREY,
+                ha="center", va="center", family="DejaVu Sans Mono")
+    wtot = lw_ + len(colhdr) * cw
+    ax.plot([x0, x0 + wtot], [y - RH / 2] * 2, lw=0.5, color=PALE_BD)
+    for i, (rl, vals) in enumerate(rows):
+        yy = y - (i + 1) * RH
+        ax.text(x0 + lw_ / 2, yy, rl, fontsize=5.4, color=GREY, ha="center",
+                va="center", family="DejaVu Sans Mono")
+        for j, v in enumerate(vals):
+            ax.text(x0 + lw_ + (j + 0.5) * cw, yy, v, fontsize=5.8, color=INK,
+                    ha="center", va="center", family="DejaVu Sans Mono")
+    ax.plot([x0, x0 + wtot], [y - (len(rows) + 0.5) * RH] * 2, lw=0.5,
+            color=PALE_BD)
+
+table(4.05, 10.42, r"$f(x^A{=}a \mid u)$", "u\\a", ("0", "1"),
+      [("0", ("3/4", "1/4")), ("1", ("1/4", "3/4"))], 0.62, 0.62)
+table(6.75, 10.42, r"$f(x^B{=}b \mid u, x^A)$", "u,a\\b", ("0", "1", "2"),
+      [("0,0", ("7/10", "3/20", "3/20")), ("1,0", ("3/10", "3/10", "2/5")),
+       ("0,1", ("2/5", "1/10", "1/2")), ("1,1", ("1/20", "9/10", "1/20"))],
+      0.68, 0.82)
+table(4.05, 8.42, r"$f(y{=}1 \mid u, x^A, x^B)$", "u\\x",
+      ("0,0", "0,1", "0,2", "1,0", "1,1", "1,2"),
+      [("0", ("1/10", "3/10", "1/10", "1/2", "7/10", "3/10")),
+       ("1", ("9/10", "7/10", "3/10", "1/2", "3/10", "1/10"))], 0.72, 0.62)
 
 for key, (gx, gy) in POS.items():
     st = STAGES[key]
@@ -168,11 +235,6 @@ arrow((POS["doB"][0] + GW + 0.14, POS["doB"][1] + GH + 0.06),
 arrow((POS["union"][0] + GW + 0.20, gy_mid("union")),
       (POS["full"][0] - 0.16, gy_mid("full")),
       r"$+\{10\} \to \kappa_1$", ly=-0.85, lx=0.10)
-
-ax.text(5.55, 6.85, r"$\Pi_{\mathrm{do}(A)},\; \Pi_{\mathrm{do}(B)} \;\subsetneq\;"
-                    r" \Pi_\cup \;\subsetneq\; \Pi_{\mathrm{do}(x)}$"
-                    "        6 $\\to$ 5, 4 $\\to$ 3 $\\to$ 2 classes",
-        ha="center", fontsize=7.6, color=INK)
 
 legend = [[("p", "singleton"), ("A", r"$\{00,11\}$ via do($X^A$)"),
            ("B", r"$\{01,11\}$ via do($X^B$)")],
